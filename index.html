@@ -373,21 +373,20 @@
       }
     }
 
-    function setupFirestoreListeners() {
-      if (!state.user || !db) return;
+function setupFirestoreListeners() {
+      if (!db) return; // Removeu a trava do state.user
       if (unsubAcomp) unsubAcomp();
       if (unsubTransf) unsubTransf();
 
-      const acompRef = collection(db, 'artifacts', customAppId, 'users', state.user.uid, 'acompanhantes');
-      const transfRef = collection(db, 'artifacts', customAppId, 'users', state.user.uid, 'transferencias');
+      // Agora aponta direto para coleções globais e compartilhadas
+      const acompRef = collection(db, 'artifacts', customAppId, 'acompanhantes');
+      const transfRef = collection(db, 'artifacts', customAppId, 'transferencias');
 
       let acompData = [];
       let transfData = [];
 
       const mergeRecords = () => {
-        // Ordena com base na data do agendamento (cronológica) em vez da ordem de criação
         state.records = [...acompData, ...transfData].sort((a, b) => getRecordDate(a) - getRecordDate(b));
-        
         if (state.currentScreen === 'visualizar') renderCalendar();
         if (state.currentScreen === 'alterar') renderRecordsList();
       };
@@ -499,10 +498,11 @@
       if (tDate) tDate.value = dateStr;
     }
 
-    async function saveToFirestore(collectionName, data) {
-      if(!state.user || !db) return;
+async function saveToFirestore(collectionName, data) {
+      if(!db) return;
       try {
-        const ref = collection(db, 'artifacts', customAppId, 'users', state.user.uid, collectionName);
+        // Caminho encurtado e unificado para todo mundo salvar no mesmo lugar
+        const ref = collection(db, 'artifacts', customAppId, collectionName);
         
         const dadosTratados = Object.keys(data).reduce((acc, key) => {
           if (key !== 'id' && key !== 'type' && typeof data[key] === 'string' && !key.toLowerCase().includes('date') && !key.toLowerCase().includes('time') && !key.toLowerCase().includes('horario')) {
@@ -574,11 +574,12 @@
       saveToFirestore('transferencias', data);
     };
 
-    window.app.deleteCurrentRecord = async () => {
-      if(!state.user || !state.editingId || !db || !confirm("Deseja realmente excluir este registro?")) return;
+window.app.deleteCurrentRecord = async () => {
+      if(!state.editingId || !db || !confirm("Deseja realmente excluir este registro?")) return;
       try {
         const col = state.editingType === 'acompanhante' ? 'acompanhantes' : 'transferencias';
-        await deleteDoc(doc(db, 'artifacts', customAppId, 'users', state.user.uid, col, state.editingId));
+        // Apaga o documento do banco de dados global
+        await deleteDoc(doc(db, 'artifacts', customAppId, col, state.editingId));
         window.app.showScreen('home');
       } catch(e) {
         console.error("Erro excluindo:", e);
