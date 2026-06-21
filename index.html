@@ -9,7 +9,7 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <script src="https://unpkg.com/lucide@latest"></script>
   
@@ -266,6 +266,13 @@
       editingId: null,
       editingType: null
     };
+    
+    function getMonday(d) {
+      const date = new Date(d);
+      const day = date.getDay();
+      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+      return new Date(date.getFullYear(), date.getMonth(), diff);
+    }
     state.weekStart = getMonday(new Date());
 
     window.app.showScreen = (screenId) => {
@@ -333,13 +340,6 @@
       return `${dias[date.getDay()]}, ${dd}/${mm}/${yyyy}`;
     }
 
-    function getMonday(d) {
-      const date = new Date(d);
-      const day = date.getDay();
-      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-      return new Date(date.getFullYear(), date.getMonth(), diff);
-    }
-
     if (window.lucide) lucide.createIcons();
 
     async function initAuth() {
@@ -360,6 +360,19 @@
     let unsubAcomp = null;
     let unsubTransf = null;
 
+    // Função auxiliar para ordenar cronologicamente pela data de início do evento
+    function getRecordDate(r) {
+      try {
+        if (r.type === 'acompanhante') {
+           return new Date(`${r.startDate}T${r.startTime}:00`).getTime();
+        } else {
+           return new Date(`${r.date}T${r.horario}:00`).getTime();
+        }
+      } catch(e) {
+        return new Date(r.createdAt || 0).getTime();
+      }
+    }
+
     function setupFirestoreListeners() {
       if (!state.user || !db) return;
       if (unsubAcomp) unsubAcomp();
@@ -372,7 +385,9 @@
       let transfData = [];
 
       const mergeRecords = () => {
-        state.records = [...acompData, ...transfData].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+        // Ordena com base na data do agendamento (cronológica) em vez da ordem de criação
+        state.records = [...acompData, ...transfData].sort((a, b) => getRecordDate(a) - getRecordDate(b));
+        
         if (state.currentScreen === 'visualizar') renderCalendar();
         if (state.currentScreen === 'alterar') renderRecordsList();
       };
@@ -381,13 +396,13 @@
         acompData = [];
         snap.forEach(doc => Object.keys(doc.data()).length > 0 && acompData.push({ id: doc.id, type: 'acompanhante', ...doc.data() }));
         mergeRecords();
-      }, (err) => console.error("Erro snapshot acompanhantes:", err));
+      });
 
       unsubTransf = onSnapshot(transfRef, (snap) => {
         transfData = [];
         snap.forEach(doc => Object.keys(doc.data()).length > 0 && transfData.push({ id: doc.id, type: 'transferencia', ...doc.data() }));
         mergeRecords();
-      }, (err) => console.error("Erro snapshot transferencias:", err));
+      });
     }
 
     function resetForms() {
@@ -451,7 +466,6 @@
       if (btnSaveTransfText) btnSaveTransfText.innerText = 'Salvar Registro';
     }
 
-    // --- LÓGICA DE BOTÕES (SUBSTITUI O SWIPE) ---
     window.app.changeAcompDate = (dir) => {
       state.baseDateAcomp.setDate(state.baseDateAcomp.getDate() + dir);
       updateAcompDisplay();
@@ -687,7 +701,8 @@
       let hoursColHtml = '<div class="w-10 shrink-0 relative border-r border-gray-200 bg-white z-10">';
       for(let h=0; h<24; h++) {
         linesHtml += `<div class="w-full border-t border-gray-100 shrink-0" style="height: 60px;"></div>`;
-        hoursColHtml += `<div class="absolute w-full text-center text-[9px] text-gray-400 font-medium" style="top: ${h * 60 - 6}px">${String(h).padStart(2, '0')}h</div>`;
+        // HORA ALTERADA PARA PRETO FORTE (text-gray-900 e font-extrabold)
+        hoursColHtml += `<div class="absolute w-full text-center text-[10px] text-gray-900 font-extrabold" style="top: ${h * 60 - 7}px">${String(h).padStart(2, '0')}h</div>`;
       }
       linesHtml += '</div>';
       hoursColHtml += '</div>';
