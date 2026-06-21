@@ -1,0 +1,823 @@
+
+import { 
+  Users, ArrowRightLeft, CalendarDays, Edit, ArrowLeft, 
+  Save, Download, MapPin, Clock, Truck
+} from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { 
+  getFirestore, initializeFirestore, persistentLocalCache, 
+  collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc,
+  persistentMultipleTabManager
+} from 'firebase/firestore';
+
+// --- CONFIGURAÇÃO DO FIREBASE (OFFLINE-FIRST) ---
+// Configuração do projeto (Chaves oficiais fornecidas)
+const userFirebaseConfig = {
+  apiKey: "AIzaSyBtHyDxJFLIyFplyaDeTlidDdXN6IzCh8s",
+  authDomain: "agendamento-visita.firebaseapp.com",
+  projectId: "agendamento-visita",
+  storageBucket: "agendamento-visita.firebasestorage.app",
+  messagingSenderId: "70182665963",
+  appId: "1:70182665963:web:dc14507ed95e64d1a208ae",
+  measurementId: "G-KHSC00WT83"
+};
+
+// Usa chaves do ambiente dinâmico (se estiver na visualização) ou as chaves do usuário (produção)
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
+
+// Inicializa o Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// Inicializa o Firestore com a Persistência Offline Ativada Nativa (Offline-First)
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
+
+// ID do App para organização dos dados no banco
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'agendamento-visita';
+
+// --- ESTILOS GLOBAIS (Fonte Poppins e Utilitários) ---
+const GlobalStyles = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f3f4f6;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior-y: none;
+    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  `}</style>
+);
+
+// --- COMPONENTES DE UI ---
+const Title = ({ children, className = '' }) => (
+  <h2 className={`text-red-600 font-bold text-xl ${className}`}>{children}</h2>
+);
+
+const InlineInput = ({ label, value, onChange, type = "text", placeholder = "", width = "w-full", icon: Icon }) => (
+  <div className="flex flex-row items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-100 w-full">
+    <div className="flex items-center space-x-2 whitespace-nowrap text-gray-700 font-medium">
+      {Icon && <Icon size={18} className="text-gray-400" />}
+      <span>{label}</span>
+    </div>
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(type === 'text' ? e.target.value.toUpperCase() : e.target.value)}
+      placeholder={placeholder}
+      className={`bg-transparent border-b border-gray-200 focus:border-red-500 outline-none text-right font-semibold text-gray-900 ${width}`}
+    />
+  </div>
+);
+
+// --- FUNÇÕES AUXILIARES ---
+const getFormatDateStr = (dateObj) => {
+  const yyyy = dateObj.getFullYear();
+  const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const dd = String(dateObj.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const formatDisplayDate = (dateStr) => {
+  const [yyyy, mm, dd] = dateStr.split('-');
+  const date = new Date(yyyy, mm - 1, dd);
+  const dias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+  return `${dias[date.getDay()]}, ${dd}/${mm}/${yyyy}`;
+};
+
+const getMonday = (d) => {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(date.getFullYear(), date.getMonth(), diff);
+};
+
+const shortDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+// --- APP PRINCIPAL ---
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [records, setRecords] = useState([]);
+  const [currentScreen, setCurrentScreen] = useState('home');
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  // Inicializa o Firebase Auth e injeta o script do PDFMake
+  useEffect(() => {
+    let isMounted = true;
+
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token && typeof __firebase_config !== 'undefined') {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (err) {
+        console.error("Erro na autenticação:", err);
+        // Fallback de Segurança: Permite o app rodar offline/localmente mesmo se o console do firebase der erro (ex: auth não ativada)
+        if (isMounted) setUser({ uid: 'offline-local-user' });
+      }
+    };
+    
+    initAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      if (u && isMounted) {
+        setUser(u);
+      } else if (!u && isMounted) {
+        // Garante que haja um usuário para salvar offline se a autenticação oficial não for possível
+        setUser(prev => prev || { uid: 'offline-local-user' });
+      }
+    });
+
+    // Carrega scripts PDFMake dinamicamente
+    if (!window.pdfMake) {
+      const script1 = document.createElement('script');
+      script1.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js';
+      document.head.appendChild(script1);
+      const script2 = document.createElement('script');
+      script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js';
+      document.head.appendChild(script2);
+    }
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  // Busca dados em tempo real do Firestore das DUAS coleções (Acompanhantes e Transferências)
+  useEffect(() => {
+    if (!user) return;
+    
+    // Referências separadas para cada coleção
+    const acompanhantesRef = collection(db, 'artifacts', appId, 'users', user.uid, 'acompanhantes');
+    const transferenciasRef = collection(db, 'artifacts', appId, 'users', user.uid, 'transferencias');
+    
+    // Escuta da coleção de Acompanhantes
+    const unsubAcompanhantes = onSnapshot(acompanhantesRef, (snapshot) => {
+      const data = [];
+      snapshot.forEach(doc => Object.keys(doc.data()).length > 0 && data.push({ id: doc.id, type: 'acompanhante', ...doc.data() }));
+      
+      setRecords(prev => {
+        const others = prev.filter(r => r.type !== 'acompanhante');
+        return [...others, ...data].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+      });
+    }, (error) => console.error("Erro ao escutar acompanhantes:", error));
+
+    // Escuta da coleção de Transferências
+    const unsubTransferencias = onSnapshot(transferenciasRef, (snapshot) => {
+      const data = [];
+      snapshot.forEach(doc => Object.keys(doc.data()).length > 0 && data.push({ id: doc.id, type: 'transferencia', ...doc.data() }));
+      
+      setRecords(prev => {
+        const others = prev.filter(r => r.type !== 'transferencia');
+        return [...others, ...data].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+      });
+    }, (error) => console.error("Erro ao escutar transferências:", error));
+
+    // Limpa ambos os listeners ao desmontar
+    return () => {
+      unsubAcompanhantes();
+      unsubTransferencias();
+    };
+  }, [user]);
+
+  // Função para salvar dados com conversão rigorosa para MAIÚSCULAS e divisão por coleção
+  const saveRecord = async (data, isUpdate = false) => {
+    if (!user) return;
+    try {
+      // Define o nome da coleção de acordo com o tipo
+      const nomeColecao = data.type === 'acompanhante' ? 'acompanhantes' : 'transferencias';
+      const recordsRef = collection(db, 'artifacts', appId, 'users', user.uid, nomeColecao);
+
+      // Garante que todas as strings (nomes) sejam salvas em MAIÚSCULAS antes do envio
+      const dadosTratados = Object.keys(data).reduce((acc, key) => {
+        // Não altera chaves de controle (id, type) ou datas automáticas
+        if (key !== 'id' && key !== 'type' && typeof data[key] === 'string' && !key.toLowerCase().includes('date') && !key.toLowerCase().includes('time') && !key.toLowerCase().includes('horario')) {
+           acc[key] = data[key].toUpperCase();
+        } else {
+           acc[key] = data[key];
+        }
+        return acc;
+      }, {});
+
+      if (isUpdate && data.id) {
+        dadosTratados.updatedAt = new Date().toISOString();
+        await updateDoc(doc(recordsRef, data.id), dadosTratados);
+      } else {
+        dadosTratados.createdAt = new Date().toISOString();
+        // Usamos setDoc com ID gerado para melhor consistência offline
+        await setDoc(doc(recordsRef, crypto.randomUUID()), dadosTratados);
+      }
+      setCurrentScreen('home');
+    } catch (err) {
+      console.error("Erro ao salvar no Firestore: ", err);
+      alert("Houve um problema ao salvar. Se estiver offline, os dados serão salvos localmente.");
+    }
+  };
+
+  const deleteRecord = async (id, tipo) => {
+    if (!user || !window.confirm("Deseja realmente excluir este registro?")) return;
+    try {
+      const nomeColecao = tipo === 'acompanhante' ? 'acompanhantes' : 'transferencias';
+      await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, nomeColecao, id));
+      setCurrentScreen('home');
+    } catch (err) {
+      console.error("Erro ao excluir no Firestore:", err);
+    }
+  };
+
+  // Geração de PDF com GPS
+  const generatePDF = async () => {
+    setPdfLoading(true);
+    let coordsText = "GPS não capturado / Sem permissão";
+    
+    try {
+      if (navigator.geolocation) {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 7000 });
+        });
+        coordsText = `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}`;
+      }
+    } catch (e) {
+      console.warn("Aviso: Falha ao obter GPS", e);
+    }
+
+    if (!window.pdfMake) {
+      alert("Gerador de PDF ainda está carregando. Tente novamente em alguns segundos.");
+      setPdfLoading(false);
+      return;
+    }
+
+    const docDefinition = {
+      content: [
+        { text: 'RELATÓRIO DE AGENDAMENTOS', style: 'header', alignment: 'center' },
+        { text: `Gerado em: ${new Date().toLocaleString()}`, alignment: 'center', margin: [0, 0, 0, 20] },
+      ],
+      footer: (currentPage, pageCount) => ({
+        text: `Página ${currentPage} de ${pageCount} | Localização de geração: ${coordsText}`,
+        alignment: 'center', fontSize: 8, margin: [0, 10, 0, 0]
+      }),
+      styles: {
+        header: { fontSize: 18, bold: true, color: '#dc2626', margin: [0, 0, 0, 10] },
+        subheader: { fontSize: 14, bold: true, margin: [0, 10, 0, 5], color: '#1f2937' },
+        item: { fontSize: 11, margin: [0, 2, 0, 2] }
+      }
+    };
+
+    records.forEach(r => {
+      if (r.type === 'acompanhante') {
+        docDefinition.content.push(
+          { text: `Acompanhante: ${r.acompanhante}`, style: 'subheader' },
+          { text: `Início: ${formatDisplayDate(r.startDate)} às ${r.startTime}`, style: 'item' },
+          { text: `Fim: ${formatDisplayDate(r.endDate)} às ${r.endTime}`, style: 'item' },
+          { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1, lineColor: '#e5e7eb' }], margin: [0, 10, 0, 10] }
+        );
+      } else {
+        docDefinition.content.push(
+          { text: `Transferência - Dia: ${formatDisplayDate(r.date)}`, style: 'subheader' },
+          { text: `Visita: ${r.visita}`, style: 'item' },
+          { text: `Retorno: ${r.retorna}`, style: 'item' },
+          { text: `Transporte: ${r.transporte} | Horário: ${r.horario}`, style: 'item' },
+          { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1, lineColor: '#e5e7eb' }], margin: [0, 10, 0, 10] }
+        );
+      }
+    });
+
+    window.pdfMake.createPdf(docDefinition).download('agendamentos.pdf');
+    setPdfLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen max-w-md mx-auto bg-gray-50 flex flex-col relative overflow-hidden shadow-2xl sm:rounded-3xl sm:my-4 sm:border sm:border-gray-200">
+      <GlobalStyles />
+      
+      {/* HEADER GERAL (Exceto na Home) */}
+      {currentScreen !== 'home' && (
+        <div className="bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between z-10 sticky top-0 shadow-sm">
+          <button onClick={() => setCurrentScreen('home')} className="p-2 -ml-2 rounded-full hover:bg-gray-100 text-gray-700 transition-colors">
+            <ArrowLeft size={24} />
+          </button>
+          <Title className="text-lg">
+            {currentScreen === 'acompanhante' && 'Novo Acompanhante'}
+            {currentScreen === 'transferencia' && 'Nova Transferência'}
+            {currentScreen === 'visualizar' && 'Agenda da Semana'}
+            {currentScreen === 'alterar' && 'Alterar Registros'}
+            {currentScreen === 'editar' && 'Editando Registro'}
+          </Title>
+          <div className="w-8"></div> {/* Spacer para centralizar */}
+        </div>
+      )}
+
+      {/* ÁREA DE CONTEÚDO */}
+      <div className="flex-1 overflow-y-auto hide-scrollbar bg-gray-50">
+        {currentScreen === 'home' && (
+          <HomeScreen 
+            setScreen={setCurrentScreen} 
+            generatePDF={generatePDF} 
+            pdfLoading={pdfLoading} 
+          />
+        )}
+        
+        {currentScreen === 'acompanhante' && (
+          <AcompanhanteForm onSave={(data) => saveRecord({ type: 'acompanhante', ...data })} />
+        )}
+        
+        {currentScreen === 'transferencia' && (
+          <TransferenciaForm onSave={(data) => saveRecord({ type: 'transferencia', ...data })} />
+        )}
+
+        {currentScreen === 'visualizar' && (
+          <VisualizarSemana records={records} />
+        )}
+
+        {currentScreen === 'alterar' && (
+          <ListarRegistros 
+            records={records} 
+            onEdit={(record) => {
+              setEditingRecord(record);
+              setCurrentScreen('editar');
+            }} 
+          />
+        )}
+
+        {currentScreen === 'editar' && editingRecord && (
+          <div className="p-4">
+             {editingRecord.type === 'acompanhante' ? (
+                <AcompanhanteForm 
+                  initialData={editingRecord} 
+                  onSave={(data) => saveRecord({ ...editingRecord, ...data, type: 'acompanhante' }, true)}
+                  onDelete={() => deleteRecord(editingRecord.id, 'acompanhante')}
+                  isEdit
+                />
+             ) : (
+                <TransferenciaForm 
+                  initialData={editingRecord} 
+                  onSave={(data) => saveRecord({ ...editingRecord, ...data, type: 'transferencia' }, true)}
+                  onDelete={() => deleteRecord(editingRecord.id, 'transferencia')}
+                  isEdit
+                />
+             )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// TELA 1: HOME
+// ==========================================
+const HomeScreen = ({ setScreen, generatePDF, pdfLoading }) => (
+  <div className="p-6 flex flex-col h-full justify-center space-y-6">
+    <div className="text-center mb-8">
+      <Title className="text-3xl mb-2">Painel de Gestão</Title>
+      <p className="text-gray-500 font-medium text-sm">Controle de Agendamentos</p>
+    </div>
+
+    <div className="grid grid-cols-1 gap-4">
+      <button 
+        onClick={() => setScreen('acompanhante')}
+        className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4 hover:shadow-md hover:border-red-200 transition-all active:scale-95"
+      >
+        <div className="bg-red-50 p-3 rounded-full text-red-600"><Users size={28} /></div>
+        <span className="text-lg font-semibold text-gray-800 flex-1 text-left">Acompanhante</span>
+      </button>
+
+      <button 
+        onClick={() => setScreen('transferencia')}
+        className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4 hover:shadow-md hover:border-red-200 transition-all active:scale-95"
+      >
+        <div className="bg-blue-50 p-3 rounded-full text-blue-600"><ArrowRightLeft size={28} /></div>
+        <span className="text-lg font-semibold text-gray-800 flex-1 text-left">Transferência</span>
+      </button>
+
+      <button 
+        onClick={() => setScreen('visualizar')}
+        className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4 hover:shadow-md hover:border-red-200 transition-all active:scale-95"
+      >
+        <div className="bg-amber-50 p-3 rounded-full text-amber-600"><CalendarDays size={28} /></div>
+        <span className="text-lg font-semibold text-gray-800 flex-1 text-left">Visualizar Semana</span>
+      </button>
+
+      <button 
+        onClick={() => setScreen('alterar')}
+        className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4 hover:shadow-md hover:border-red-200 transition-all active:scale-95"
+      >
+        <div className="bg-emerald-50 p-3 rounded-full text-emerald-600"><Edit size={28} /></div>
+        <span className="text-lg font-semibold text-gray-800 flex-1 text-left">Alterar Registro</span>
+      </button>
+    </div>
+
+    <div className="mt-8 flex justify-center">
+      <button 
+        onClick={generatePDF}
+        disabled={pdfLoading}
+        className="flex items-center space-x-2 text-sm text-gray-500 bg-gray-100 px-4 py-2 rounded-full hover:bg-gray-200 transition-colors"
+      >
+        <Download size={16} />
+        <span>{pdfLoading ? 'Gerando PDF...' : 'Baixar Relatório (PDF)'}</span>
+      </button>
+    </div>
+  </div>
+);
+
+// ==========================================
+// TELA 2: FORMULÁRIO DE ACOMPANHANTE
+// ==========================================
+const AcompanhanteForm = ({ onSave, initialData, isEdit, onDelete }) => {
+  const [baseDate, setBaseDate] = useState(initialData?.startDate ? new Date(`${initialData.startDate}T12:00:00`) : new Date());
+  
+  const [formData, setFormData] = useState(initialData || {
+    acompanhante: '',
+    startDate: getFormatDateStr(baseDate),
+    startTime: '08:00',
+    endDate: getFormatDateStr(baseDate),
+    endTime: '18:00',
+  });
+
+  useEffect(() => {
+    if (!isEdit) {
+      const dateStr = getFormatDateStr(baseDate);
+      setFormData(prev => ({ ...prev, startDate: dateStr, endDate: dateStr }));
+    }
+  }, [baseDate, isEdit]);
+
+  const [touchStart, setTouchStart] = useState(0);
+  const handleTouchStart = (e) => setTouchStart(e.touches[0].clientY);
+  const handleTouchEnd = (e) => {
+    const touchEnd = e.changedTouches[0].clientY;
+    const diff = touchStart - touchEnd;
+    if (Math.abs(diff) > 50) { 
+      const newDate = new Date(baseDate);
+      if (diff > 0) newDate.setDate(newDate.getDate() + 1);
+      else newDate.setDate(newDate.getDate() - 1); 
+      setBaseDate(newDate);
+    }
+  };
+
+  const handleSubmit = () => {
+    if(!formData.acompanhante) return alert("Preencha o nome do acompanhante");
+    onSave(formData);
+  };
+
+  return (
+    <div className="flex flex-col h-full space-y-6" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      {!isEdit && (
+        <div className="bg-red-600 text-white p-6 pb-8 rounded-b-[40px] shadow-md flex flex-col items-center justify-center relative">
+          <span className="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">
+            Deslize para mudar o dia
+          </span>
+          <h1 className="text-2xl font-bold">{formatDisplayDate(getFormatDateStr(baseDate))}</h1>
+          <div className="absolute bottom-2 animate-bounce opacity-50 text-xs">↕</div>
+        </div>
+      )}
+
+      <div className={`flex-1 px-4 space-y-4 ${isEdit ? '' : 'pt-4'}`}>
+        <InlineInput 
+          label="Acompanhante" 
+          icon={Users}
+          value={formData.acompanhante} 
+          onChange={(val) => setFormData({...formData, acompanhante: val})} 
+          placeholder="NOME"
+        />
+
+        <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 space-y-3">
+          <Title className="text-sm">Início</Title>
+          <div className="flex space-x-2">
+            <InlineInput label="Data" type="date" value={formData.startDate} onChange={(val) => setFormData({...formData, startDate: val})} width="w-fit" />
+            <InlineInput label="Hora" type="time" value={formData.startTime} onChange={(val) => setFormData({...formData, startTime: val})} width="w-fit" />
+          </div>
+        </div>
+
+        <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 space-y-3">
+          <Title className="text-sm">Fim</Title>
+          <div className="flex space-x-2">
+            <InlineInput label="Data" type="date" value={formData.endDate} onChange={(val) => setFormData({...formData, endDate: val})} width="w-fit" />
+            <InlineInput label="Hora" type="time" value={formData.endTime} onChange={(val) => setFormData({...formData, endTime: val})} width="w-fit" />
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 bg-white border-t border-gray-100 flex space-x-3 pb-8">
+        {isEdit && (
+           <button onClick={onDelete} className="bg-gray-100 text-red-600 font-bold py-3 px-4 rounded-xl shadow-sm">
+             Excluir
+           </button>
+        )}
+        <button onClick={handleSubmit} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-md flex items-center justify-center space-x-2 transition-colors">
+          <Save size={20} />
+          <span>{isEdit ? 'Atualizar' : 'Salvar Registro'}</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// TELA 3: FORMULÁRIO DE TRANSFERÊNCIA
+// ==========================================
+const TransferenciaForm = ({ onSave, initialData, isEdit, onDelete }) => {
+  const [baseDate, setBaseDate] = useState(initialData?.date ? new Date(`${initialData.date}T12:00:00`) : new Date());
+  
+  const [formData, setFormData] = useState(initialData || {
+    date: getFormatDateStr(baseDate),
+    visita: '',
+    retorna: '',
+    transporte: '',
+    horario: '10:00',
+  });
+
+  useEffect(() => {
+    if (!isEdit) {
+      setFormData(prev => ({ ...prev, date: getFormatDateStr(baseDate) }));
+    }
+  }, [baseDate, isEdit]);
+
+  const [touchStart, setTouchStart] = useState(0);
+  const handleTouchStart = (e) => setTouchStart(e.touches[0].clientY);
+  const handleTouchEnd = (e) => {
+    const touchEnd = e.changedTouches[0].clientY;
+    const diff = touchStart - touchEnd;
+    if (Math.abs(diff) > 50) {
+      const newDate = new Date(baseDate);
+      if (diff > 0) newDate.setDate(newDate.getDate() + 1);
+      else newDate.setDate(newDate.getDate() - 1);
+      setBaseDate(newDate);
+    }
+  };
+
+  const handleSubmit = () => {
+    if(!formData.visita || !formData.retorna) return alert("Preencha Visita e Retorno");
+    onSave(formData);
+  };
+
+  return (
+    <div className="flex flex-col h-full space-y-6" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      {!isEdit && (
+        <div className="bg-blue-600 text-white p-6 pb-8 rounded-b-[40px] shadow-md flex flex-col items-center justify-center relative">
+          <span className="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">
+            Deslize para mudar o dia
+          </span>
+          <h1 className="text-2xl font-bold">{formatDisplayDate(getFormatDateStr(baseDate))}</h1>
+          <div className="absolute bottom-2 animate-bounce opacity-50 text-xs">↕</div>
+        </div>
+      )}
+
+      <div className={`flex-1 px-4 space-y-4 ${isEdit ? '' : 'pt-4'}`}>
+        {isEdit && (
+           <InlineInput label="Data" type="date" value={formData.date} onChange={(val) => setFormData({...formData, date: val})} width="w-full" />
+        )}
+
+        <InlineInput 
+          label="Visita" 
+          icon={Users}
+          value={formData.visita} 
+          onChange={(val) => setFormData({...formData, visita: val})} 
+          placeholder="NOME DA PESSOA"
+        />
+
+        <InlineInput 
+          label="Retorna" 
+          icon={Users}
+          value={formData.retorna} 
+          onChange={(val) => setFormData({...formData, retorna: val})} 
+          placeholder="NOME DA PESSOA"
+        />
+
+        <div className="flex space-x-2 items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center space-x-2 text-gray-700 font-medium whitespace-nowrap">
+            <Truck size={18} className="text-gray-400" />
+            <span>Transp.</span>
+          </div>
+          <input
+            type="text"
+            value={formData.transporte}
+            onChange={(e) => setFormData({...formData, transporte: e.target.value.toUpperCase()})}
+            placeholder="NOME DO MOTORISTA"
+            className="bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-center font-semibold text-gray-900 w-full mx-2"
+          />
+          <div className="flex items-center space-x-1">
+             <Clock size={16} className="text-gray-400"/>
+             <input
+              type="time"
+              value={formData.horario}
+              onChange={(e) => setFormData({...formData, horario: e.target.value})}
+              className="bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-right font-semibold text-gray-900 w-fit"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 bg-white border-t border-gray-100 flex space-x-3 pb-8">
+        {isEdit && (
+           <button onClick={onDelete} className="bg-gray-100 text-red-600 font-bold py-3 px-4 rounded-xl shadow-sm">
+             Excluir
+           </button>
+        )}
+        <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md flex items-center justify-center space-x-2 transition-colors">
+          <Save size={20} />
+          <span>{isEdit ? 'Atualizar' : 'Salvar Registro'}</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// TELA 4: VISUALIZAR SEMANA (TIME BLOCKING)
+// ==========================================
+const VisualizarSemana = ({ records }) => {
+  const [weekStart, setWeekStart] = useState(getMonday(new Date()));
+  const [touchStartX, setTouchStartX] = useState(0);
+
+  const handleTouchStart = (e) => setTouchStartX(e.touches[0].clientX);
+  const handleTouchEnd = (e) => {
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 50) {
+      const newWeek = new Date(weekStart);
+      if (diff > 0) newWeek.setDate(newWeek.getDate() + 7); 
+      else newWeek.setDate(newWeek.getDate() - 7); 
+      setWeekStart(newWeek);
+    }
+  };
+
+  const weekDates = useMemo(() => {
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      return d;
+    });
+  }, [weekStart]);
+
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  return (
+    <div className="flex flex-col h-full bg-white relative" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div className="sticky top-0 z-30 flex flex-col shadow-sm">
+        <div className="bg-amber-100 p-2 text-center border-b border-amber-200 flex items-center justify-between px-2">
+          <button onClick={() => { const d=new Date(weekStart); d.setDate(d.getDate()-7); setWeekStart(d); }} className="text-amber-700 font-bold text-xl px-3 py-1">&lsaquo;</button>
+          <div className="flex flex-col items-center">
+             <span className="text-[10px] font-semibold text-amber-700 uppercase tracking-widest block">Semana de</span>
+             <h2 className="text-sm font-bold text-gray-900">
+               {weekDates[0].getDate().toString().padStart(2, '0')}/{(weekDates[0].getMonth() + 1).toString().padStart(2, '0')} a {weekDates[6].getDate().toString().padStart(2, '0')}/{(weekDates[6].getMonth() + 1).toString().padStart(2, '0')}
+             </h2>
+          </div>
+          <button onClick={() => { const d=new Date(weekStart); d.setDate(d.getDate()+7); setWeekStart(d); }} className="text-amber-700 font-bold text-xl px-3 py-1">&rsaquo;</button>
+        </div>
+
+        <div className="flex border-b border-gray-200 bg-gray-50">
+           <div className="w-10 shrink-0 border-r border-gray-200 bg-white"></div>
+           {weekDates.map((d, i) => {
+             const isToday = d.toDateString() === new Date().toDateString();
+             return (
+               <div key={i} className={`flex-1 flex flex-col items-center py-1 border-r border-gray-100 text-[10px] ${isToday ? 'bg-amber-50' : ''}`}>
+                 <span className={`font-medium ${isToday ? 'text-amber-600' : 'text-gray-500'}`}>{shortDays[d.getDay()]}</span>
+                 <span className={`font-bold mt-[2px] ${isToday ? 'bg-amber-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-sm' : 'text-gray-800'}`}>
+                   {d.getDate()}
+                 </span>
+               </div>
+             )
+           })}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto pb-10 hide-scrollbar bg-white">
+        <div className="flex relative" style={{ height: '1440px' }}>
+          <div className="absolute inset-0 pointer-events-none z-0 flex flex-col">
+             {hours.map(h => (
+               <div key={h} className="w-full border-t border-gray-100 shrink-0" style={{ height: '60px' }} />
+             ))}
+          </div>
+
+          <div className="w-10 shrink-0 relative border-r border-gray-200 bg-white z-10">
+             {hours.map(h => (
+                <div key={h} className="absolute w-full text-center text-[9px] text-gray-400 font-medium" style={{ top: `${h * 60 - 6}px` }}>
+                   {String(h).padStart(2, '0')}h
+                </div>
+             ))}
+          </div>
+
+          {weekDates.map((dateObj, dayIndex) => {
+             const dateStr = getFormatDateStr(dateObj);
+             const startOfDay = new Date(`${dateStr}T00:00:00`);
+             const endOfDay = new Date(`${dateStr}T23:59:59`);
+
+             const dayRecords = records.filter(r => {
+               if (r.type === 'acompanhante') {
+                 const rStart = new Date(`${r.startDate}T${r.startTime}`);
+                 const rEnd = new Date(`${r.endDate}T${r.endTime}`);
+                 return rStart <= endOfDay && rEnd >= startOfDay;
+               } else {
+                 return r.date === dateStr;
+               }
+             });
+
+             return (
+               <div key={dateStr} className={`flex-1 relative border-r border-gray-100 z-10 ${dateObj.toDateString() === new Date().toDateString() ? 'bg-amber-50 bg-opacity-20' : ''}`}>
+                  {dayRecords.map((r, idx) => {
+                    if (r.type === 'acompanhante') {
+                      const rStart = new Date(`${r.startDate}T${r.startTime}`);
+                      const rEnd = new Date(`${r.endDate}T${r.endTime}`);
+                      
+                      const visibleStart = rStart < startOfDay ? startOfDay : rStart;
+                      const visibleEnd = rEnd > endOfDay ? endOfDay : rEnd;
+                      
+                      const topPx = (visibleStart.getHours() * 60) + visibleStart.getMinutes();
+                      const durationMins = (visibleEnd - visibleStart) / (1000 * 60);
+                      let heightPx = durationMins < 30 ? 30 : durationMins;
+
+                      return (
+                        <div key={r.id || idx} className="absolute left-[2px] right-[2px] rounded bg-red-100 border border-red-300 shadow-sm flex items-center justify-center overflow-hidden opacity-90"
+                             style={{ top: `${topPx}px`, height: `${heightPx}px` }}>
+                          <span className="text-[10px] font-bold text-red-800 whitespace-nowrap overflow-hidden text-ellipsis px-1" 
+                                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                            {r.acompanhante}
+                          </span>
+                        </div>
+                      );
+                    } 
+                    else {
+                      const [hh, mm] = r.horario.split(':').map(Number);
+                      const topPx = (hh * 60) + mm;
+
+                      return (
+                        <div key={r.id || idx} className="absolute left-[1px] right-[1px] z-20 flex flex-col items-center"
+                             style={{ top: `${topPx - 2}px` }}>
+                          <div className="w-full h-[4px] bg-blue-700 rounded-full mb-[2px] shadow-sm"></div>
+                          <div className="bg-blue-600 text-white rounded-sm py-1 shadow-md overflow-hidden flex flex-col items-center max-h-[80px]">
+                            <span className="text-[9px] font-bold whitespace-nowrap overflow-hidden text-ellipsis" 
+                                  style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                              {r.visita}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+                  })}
+               </div>
+             );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// TELA 5: LISTA PARA ALTERAR REGISTROS
+// ==========================================
+const ListarRegistros = ({ records, onEdit }) => {
+  return (
+    <div className="p-4 space-y-4 pb-10">
+      <p className="text-sm text-gray-500 text-center mb-4">Toque em qualquer registro para alterar ou excluir.</p>
+      
+      {records.length === 0 && (
+        <div className="text-center text-gray-400 mt-10">Nenhum registro encontrado.</div>
+      )}
+
+      {records.map(r => (
+        <div 
+          key={r.id} 
+          onClick={() => onEdit(r)}
+          className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col space-y-2 active:scale-95 transition-transform"
+        >
+          {r.type === 'acompanhante' ? (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">ACOMPANHANTE</span>
+                <span className="text-xs text-gray-400">{formatDisplayDate(r.startDate)}</span>
+              </div>
+              <Title className="text-lg text-gray-900">{r.acompanhante}</Title>
+              <div className="text-sm text-gray-600 flex justify-between">
+                <span>Início: {r.startTime}</span>
+                <span>Fim: {r.endDate !== r.startDate ? formatDisplayDate(r.endDate) : ''} {r.endTime}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">TRANSFERÊNCIA</span>
+                <span className="text-xs text-gray-400">{formatDisplayDate(r.date)}</span>
+              </div>
+              <Title className="text-lg text-gray-900 line-clamp-1">{r.visita} &rarr; {r.retorna}</Title>
+              <div className="text-sm text-gray-600 flex space-x-4">
+                <span><Truck size={14} className="inline mr-1"/> {r.transporte}</span>
+                <span><Clock size={14} className="inline mr-1"/> {r.horario}</span>
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
