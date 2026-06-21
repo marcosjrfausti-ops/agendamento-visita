@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Agendamentos</title>
+  <title>Gestão de Agendamentos</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <script src="https://unpkg.com/lucide@latest"></script>
   
@@ -37,7 +37,6 @@
       writing-mode: vertical-rl;
       transform: rotate(180deg);
     }
-    /* inputs automáticos em maiúsculo na digitação */
     input.uppercase-input { text-transform: uppercase; }
   </style>
 </head>
@@ -91,30 +90,8 @@
         </div>
       </div>
 
-      <div id="screen-acompanhante" class="screen hidden h-full flex flex-col space-y-6">
-        <div id="acomp-date-area" class="bg-red-600 text-white p-5 pb-6 rounded-b-[40px] shadow-md flex items-center justify-between select-none">
-          <button onclick="app.changeAcompDate(-1)" class="p-2 bg-red-700/50 hover:bg-red-700 rounded-full active:scale-90 transition-all">
-            <i data-lucide="chevron-left" class="w-6 h-6"></i>
-          </button>
-          
-          <div class="flex flex-col items-center flex-1 px-2">
-            <span class="text-[10px] font-medium opacity-80 uppercase tracking-widest mb-1">Altere a data nos botões</span>
-            <h1 id="acomp-date-display" class="text-xl font-bold text-center leading-tight">A carregar...</h1>
-          </div>
-
-          <button onclick="app.changeAcompDate(1)" class="p-2 bg-red-700/50 hover:bg-red-700 rounded-full active:scale-90 transition-all">
-            <i data-lucide="chevron-right" class="w-6 h-6"></i>
-          </button>
-        </div>
-
-        <div class="flex-1 px-4 space-y-4 pt-4">
-          <div id="acomp-edit-date-wrapper" class="hidden">
-             <div class="flex flex-row items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-100 w-full mb-4">
-                <span class="text-gray-700 font-medium">Data Ref.</span>
-                <input type="date" id="acomp-input-basedate" class="bg-transparent border-b border-gray-200 focus:border-red-500 outline-none text-right font-semibold text-gray-900 w-fit">
-             </div>
-          </div>
-
+      <div id="screen-acompanhante" class="screen hidden h-full flex flex-col space-y-4 pt-6">
+        <div class="flex-1 px-4 space-y-4">
           <div class="flex flex-row items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-100 w-full">
             <div class="flex items-center space-x-2 whitespace-nowrap text-gray-700 font-medium">
               <i data-lucide="users" class="w-4 h-4 text-gray-400"></i><span>Acompanhante</span>
@@ -160,49 +137,34 @@
         </div>
       </div>
 
-      <div id="screen-transferencia" class="screen hidden h-full flex flex-col space-y-6">
-        <div id="transf-date-area" class="bg-blue-600 text-white p-5 pb-6 rounded-b-[40px] shadow-md flex items-center justify-between select-none">
-          <button onclick="app.changeTransfDate(-1)" class="p-2 bg-blue-700/50 hover:bg-blue-700 rounded-full active:scale-90 transition-all">
-            <i data-lucide="chevron-left" class="w-6 h-6"></i>
-          </button>
-          
-          <div class="flex flex-col items-center flex-1 px-2">
-            <span class="text-[10px] font-medium opacity-80 uppercase tracking-widest mb-1">Altere a data nos botões</span>
-            <h1 id="transf-date-display" class="text-xl font-bold text-center leading-tight">A carregar...</h1>
-          </div>
-
-          <button onclick="app.changeTransfDate(1)" class="p-2 bg-blue-700/50 hover:bg-blue-700 rounded-full active:scale-90 transition-all">
-            <i data-lucide="chevron-right" class="w-6 h-6"></i>
-          </button>
-        </div>
-
-        <div class="flex-1 px-4 space-y-4 pt-4">
-          <div id="transf-edit-date-wrapper" class="hidden">
-             <div class="flex flex-row items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-100 w-full mb-4">
-                <span class="text-gray-700 font-medium">Data</span>
-                <input type="date" id="transf-date" class="bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-right font-semibold text-gray-900 w-fit">
-             </div>
+      <div id="screen-transferencia" class="screen hidden h-full flex flex-col space-y-4 pt-6">
+        <div class="flex-1 px-4 space-y-4">
+          <div class="flex flex-row items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-100 w-full">
+            <div class="flex items-center space-x-2 whitespace-nowrap text-gray-700 font-medium">
+              <i data-lucide="calendar" class="w-4 h-4 text-gray-400"></i><span>Data</span>
+            </div>
+            <input type="date" id="transf-date" class="bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-right font-semibold text-gray-900 w-fit">
           </div>
 
           <div class="flex flex-row items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-100 w-full">
             <div class="flex items-center space-x-2 whitespace-nowrap text-gray-700 font-medium">
               <i data-lucide="users" class="w-4 h-4 text-gray-400"></i><span>Visita</span>
             </div>
-            <input type="text" id="transf-visita" placeholder="NOME DA PESSOA" class="uppercase-input bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-right font-semibold text-gray-900 w-full ml-2">
+            <input type="text" id="transf-visita" placeholder="NOME" class="uppercase-input bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-right font-semibold text-gray-900 w-full ml-2">
           </div>
 
           <div class="flex flex-row items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-100 w-full">
             <div class="flex items-center space-x-2 whitespace-nowrap text-gray-700 font-medium">
               <i data-lucide="users" class="w-4 h-4 text-gray-400"></i><span>Retorna</span>
             </div>
-            <input type="text" id="transf-retorna" placeholder="NOME DA PESSOA" class="uppercase-input bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-right font-semibold text-gray-900 w-full ml-2">
+            <input type="text" id="transf-retorna" placeholder="NOME" class="uppercase-input bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-right font-semibold text-gray-900 w-full ml-2">
           </div>
 
           <div class="flex space-x-2 items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
             <div class="flex items-center space-x-2 text-gray-700 font-medium whitespace-nowrap">
               <i data-lucide="truck" class="w-4 h-4 text-gray-400"></i><span>Transp.</span>
             </div>
-            <input type="text" id="transf-transporte" placeholder="NOME DO MOTORISTA" class="uppercase-input bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-center font-semibold text-gray-900 w-full mx-2">
+            <input type="text" id="transf-transporte" placeholder="MOTORISTA" class="uppercase-input bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-center font-semibold text-gray-900 w-full mx-2">
             <div class="flex items-center space-x-1">
                <i data-lucide="clock" class="w-4 h-4 text-gray-400"></i>
                <input type="time" id="transf-horario" class="bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none text-right font-semibold text-gray-900 w-fit">
@@ -224,26 +186,23 @@
           <div class="bg-amber-100 p-2 text-center border-b border-amber-200 flex items-center justify-between px-2 select-none">
             <button onclick="app.changeWeek(-7)" class="text-amber-700 font-bold text-xl px-3 py-1">&lsaquo;</button>
             <div class="flex flex-col items-center">
-               <span class="text-[10px] font-semibold text-amber-700 uppercase tracking-widest block">Altere a semana nos botões</span>
+               <span class="text-[10px] font-semibold text-amber-700 uppercase tracking-widest block">Semana de</span>
                <h2 id="cal-week-label" class="text-sm font-bold text-gray-900">...</h2>
             </div>
             <button onclick="app.changeWeek(7)" class="text-amber-700 font-bold text-xl px-3 py-1">&rsaquo;</button>
           </div>
           
-          <div id="cal-days-header" class="flex border-b border-gray-200 bg-gray-50">
-             </div>
+          <div id="cal-days-header" class="flex border-b border-gray-200 bg-gray-50"></div>
         </div>
 
         <div class="flex-1 overflow-y-auto pb-10 hide-scrollbar bg-white">
-          <div class="flex relative" style="height: 1440px;" id="cal-grid-body">
-            </div>
+          <div class="flex relative" style="height: 1440px;" id="cal-grid-body"></div>
         </div>
       </div>
 
       <div id="screen-alterar" class="screen hidden pb-10 p-4 space-y-4">
-        <p class="text-sm text-gray-500 text-center mb-4 mt-2">Toque em qualquer registro para alterar ou excluir.</p>
-        <div id="records-list" class="space-y-4">
-          </div>
+        <p class="text-sm text-gray-500 text-center mb-2 mt-2">Toque em qualquer registo para alterar ou excluir.</p>
+        <div id="records-list" class="space-y-4"></div>
       </div>
 
     </div>
@@ -251,7 +210,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     window.app = {};
@@ -262,10 +221,17 @@
       currentScreen: 'home',
       baseDateAcomp: new Date(),
       baseDateTransf: new Date(),
-      weekStart: new Date(),
+      weekStart: new Date(), 
       editingId: null,
       editingType: null
     };
+    
+    function getMonday(d) {
+      const date = new Date(d);
+      const day = date.getDay();
+      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+      return new Date(date.getFullYear(), date.getMonth(), diff);
+    }
     state.weekStart = getMonday(new Date());
 
     window.app.showScreen = (screenId) => {
@@ -286,12 +252,9 @@
           if(screenId === 'acompanhante') headerTitle.innerText = state.editingId ? 'Editar Acompanhante' : 'Novo Acompanhante';
           if(screenId === 'transferencia') headerTitle.innerText = state.editingId ? 'Editar Transferência' : 'Nova Transferência';
           if(screenId === 'visualizar') { headerTitle.innerText = 'Agenda da Semana'; renderCalendar(); }
-          if(screenId === 'alterar') { headerTitle.innerText = 'Alterar Registros'; renderRecordsList(); }
+          if(screenId === 'alterar') { headerTitle.innerText = 'Alterar Registos'; renderRecordsList(); }
         }
       }
-
-      if (screenId === 'acompanhante' && !state.editingId) updateAcompDisplay();
-      if (screenId === 'transferencia' && !state.editingId) updateTransfDisplay();
     };
 
     const firebaseConfig = {
@@ -318,6 +281,7 @@
     }
     const customAppId = 'agendamento-visita';
 
+    // Utilitários de Data
     function getFormatDateStr(dateObj) {
       const yyyy = dateObj.getFullYear();
       const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -333,11 +297,13 @@
       return `${dias[date.getDay()]}, ${dd}/${mm}/${yyyy}`;
     }
 
-    function getMonday(d) {
-      const date = new Date(d);
-      const day = date.getDay();
-      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-      return new Date(date.getFullYear(), date.getMonth(), diff);
+    // NOVA FUNÇÃO: Data Abreviada sem o ano (para a lista de cartões)
+    function formatShortDate(dateStr) {
+      if (!dateStr) return '';
+      const [yyyy, mm, dd] = dateStr.split('-');
+      const date = new Date(yyyy, mm - 1, dd);
+      const shortDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      return `${shortDays[date.getDay()]}, ${dd}/${mm}`;
     }
 
     if (window.lucide) lucide.createIcons();
@@ -360,19 +326,31 @@
     let unsubAcomp = null;
     let unsubTransf = null;
 
+    function getRecordDate(r) {
+      try {
+        if (r.type === 'acompanhante') {
+           return new Date(`${r.startDate}T${r.startTime}:00`).getTime();
+        } else {
+           return new Date(`${r.date}T${r.horario}:00`).getTime();
+        }
+      } catch(e) {
+        return new Date(r.createdAt || 0).getTime();
+      }
+    }
+
     function setupFirestoreListeners() {
-      if (!state.user || !db) return;
+      if (!db) return;
       if (unsubAcomp) unsubAcomp();
       if (unsubTransf) unsubTransf();
 
-      const acompRef = collection(db, 'artifacts', customAppId, 'users', state.user.uid, 'acompanhantes');
-      const transfRef = collection(db, 'artifacts', customAppId, 'users', state.user.uid, 'transferencias');
+      const acompRef = collection(db, 'artifacts', customAppId, 'acompanhantes');
+      const transfRef = collection(db, 'artifacts', customAppId, 'transferencias');
 
       let acompData = [];
       let transfData = [];
 
       const mergeRecords = () => {
-        state.records = [...acompData, ...transfData].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+        state.records = [...acompData, ...transfData].sort((a, b) => getRecordDate(a) - getRecordDate(b));
         if (state.currentScreen === 'visualizar') renderCalendar();
         if (state.currentScreen === 'alterar') renderRecordsList();
       };
@@ -381,13 +359,13 @@
         acompData = [];
         snap.forEach(doc => Object.keys(doc.data()).length > 0 && acompData.push({ id: doc.id, type: 'acompanhante', ...doc.data() }));
         mergeRecords();
-      }, (err) => console.error("Erro snapshot acompanhantes:", err));
+      });
 
       unsubTransf = onSnapshot(transfRef, (snap) => {
         transfData = [];
         snap.forEach(doc => Object.keys(doc.data()).length > 0 && transfData.push({ id: doc.id, type: 'transferencia', ...doc.data() }));
         mergeRecords();
-      }, (err) => console.error("Erro snapshot transferencias:", err));
+      });
     }
 
     function resetForms() {
@@ -411,12 +389,6 @@
       const acompEndTime = document.getElementById('acomp-end-time');
       if (acompEndTime) acompEndTime.value = '18:00';
       
-      const acompDateArea = document.getElementById('acomp-date-area');
-      if (acompDateArea) acompDateArea.classList.remove('hidden');
-      
-      const acompEditDate = document.getElementById('acomp-edit-date-wrapper');
-      if (acompEditDate) acompEditDate.classList.add('hidden');
-      
       const btnDelAcomp = document.getElementById('btn-delete-acomp');
       if (btnDelAcomp) btnDelAcomp.classList.add('hidden');
       
@@ -438,12 +410,6 @@
       const transfDate = document.getElementById('transf-date');
       if (transfDate) transfDate.value = getFormatDateStr(state.baseDateTransf);
       
-      const transfDateArea = document.getElementById('transf-date-area');
-      if (transfDateArea) transfDateArea.classList.remove('hidden');
-      
-      const transfEditDate = document.getElementById('transf-edit-date-wrapper');
-      if (transfEditDate) transfEditDate.classList.add('hidden');
-      
       const btnDelTransf = document.getElementById('btn-delete-transf');
       if (btnDelTransf) btnDelTransf.classList.add('hidden');
       
@@ -451,44 +417,15 @@
       if (btnSaveTransfText) btnSaveTransfText.innerText = 'Salvar Registro';
     }
 
-    // --- LÓGICA DE BOTÕES (SUBSTITUI O SWIPE) ---
-    window.app.changeAcompDate = (dir) => {
-      state.baseDateAcomp.setDate(state.baseDateAcomp.getDate() + dir);
-      updateAcompDisplay();
-    };
-
-    window.app.changeTransfDate = (dir) => {
-      state.baseDateTransf.setDate(state.baseDateTransf.getDate() + dir);
-      updateTransfDisplay();
-    };
-
     window.app.changeWeek = (days) => {
       state.weekStart.setDate(state.weekStart.getDate() + days);
       renderCalendar();
     };
 
-    function updateAcompDisplay() {
-      const dateStr = getFormatDateStr(state.baseDateAcomp);
-      const display = document.getElementById('acomp-date-display');
-      if (display) display.innerText = formatDisplayDate(dateStr);
-      const start = document.getElementById('acomp-start-date');
-      if (start) start.value = dateStr;
-      const end = document.getElementById('acomp-end-date');
-      if (end) end.value = dateStr;
-    }
-
-    function updateTransfDisplay() {
-      const dateStr = getFormatDateStr(state.baseDateTransf);
-      const display = document.getElementById('transf-date-display');
-      if (display) display.innerText = formatDisplayDate(dateStr);
-      const tDate = document.getElementById('transf-date');
-      if (tDate) tDate.value = dateStr;
-    }
-
     async function saveToFirestore(collectionName, data) {
-      if(!state.user || !db) return;
+      if(!db) return;
       try {
-        const ref = collection(db, 'artifacts', customAppId, 'users', state.user.uid, collectionName);
+        const ref = collection(db, 'artifacts', customAppId, collectionName);
         
         const dadosTratados = Object.keys(data).reduce((acc, key) => {
           if (key !== 'id' && key !== 'type' && typeof data[key] === 'string' && !key.toLowerCase().includes('date') && !key.toLowerCase().includes('time') && !key.toLowerCase().includes('horario')) {
@@ -518,7 +455,6 @@
       const nome = nomeInput ? nomeInput.value.trim() : '';
       if(!nome) return alert("Preencha o nome.");
       
-      const baseDateWrapper = document.getElementById('acomp-input-basedate');
       const startDateInput = document.getElementById('acomp-start-date');
       const startTimeInput = document.getElementById('acomp-start-time');
       const endDateInput = document.getElementById('acomp-end-date');
@@ -527,14 +463,12 @@
       const data = {
         type: 'acompanhante',
         acompanhante: nome,
-        startDate: (state.editingId && baseDateWrapper ? baseDateWrapper.value : (startDateInput ? startDateInput.value : '')),
+        startDate: startDateInput ? startDateInput.value : '',
         startTime: startTimeInput ? startTimeInput.value : '08:00',
         endDate: endDateInput ? endDateInput.value : '',
         endTime: endTimeInput ? endTimeInput.value : '18:00'
       };
       
-      if(state.editingId && baseDateWrapper) data.startDate = baseDateWrapper.value;
-
       saveToFirestore('acompanhantes', data);
     };
 
@@ -561,10 +495,10 @@
     };
 
     window.app.deleteCurrentRecord = async () => {
-      if(!state.user || !state.editingId || !db || !confirm("Deseja realmente excluir este registro?")) return;
+      if(!state.editingId || !db || !confirm("Deseja realmente excluir este registo?")) return;
       try {
         const col = state.editingType === 'acompanhante' ? 'acompanhantes' : 'transferencias';
-        await deleteDoc(doc(db, 'artifacts', customAppId, 'users', state.user.uid, col, state.editingId));
+        await deleteDoc(doc(db, 'artifacts', customAppId, col, state.editingId));
         window.app.showScreen('home');
       } catch(e) {
         console.error("Erro excluindo:", e);
@@ -579,12 +513,9 @@
       state.editingType = rec.type;
 
       if(rec.type === 'acompanhante') {
-        document.getElementById('acomp-date-area').classList.add('hidden');
-        document.getElementById('acomp-edit-date-wrapper').classList.remove('hidden');
         document.getElementById('btn-delete-acomp').classList.remove('hidden');
         document.getElementById('btn-save-acomp-text').innerText = 'Atualizar';
         
-        document.getElementById('acomp-input-basedate').value = rec.startDate;
         document.getElementById('acomp-nome').value = rec.acompanhante;
         document.getElementById('acomp-start-date').value = rec.startDate;
         document.getElementById('acomp-start-time').value = rec.startTime;
@@ -593,8 +524,6 @@
         
         window.app.showScreen('acompanhante');
       } else {
-        document.getElementById('transf-date-area').classList.add('hidden');
-        document.getElementById('transf-edit-date-wrapper').classList.remove('hidden');
         document.getElementById('btn-delete-transf').classList.remove('hidden');
         document.getElementById('btn-save-transf-text').innerText = 'Atualizar';
 
@@ -608,11 +537,12 @@
       }
     };
 
+    // NOVA FUNÇÃO DE RENDERIZAÇÃO DA LISTA (Com design otimizado)
     function renderRecordsList() {
       const list = document.getElementById('records-list');
       if (!list) return;
       if(state.records.length === 0) {
-        list.innerHTML = `<div class="text-center text-gray-400 mt-10">Nenhum registro encontrado.</div>`;
+        list.innerHTML = `<div class="text-center text-gray-400 mt-10">Nenhum registo encontrado.</div>`;
         return;
       }
 
@@ -620,28 +550,38 @@
       state.records.forEach(r => {
         if(r.type === 'acompanhante') {
           html += `
-            <div onclick="app.editRecord('${r.id}')" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col space-y-2 active:scale-95 transition-transform cursor-pointer">
-              <div class="flex justify-between items-center">
-                <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">ACOMPANHANTE</span>
-                <span class="text-xs text-gray-400">${formatDisplayDate(r.startDate)}</span>
+            <div onclick="app.editRecord('${r.id}')" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col active:scale-95 transition-transform cursor-pointer">
+              <div class="flex items-start">
+                <span class="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded">ACOMPANHANTE</span>
               </div>
-              <h2 class="text-red-600 font-bold text-lg text-gray-900">${r.acompanhante}</h2>
-              <div class="text-sm text-gray-600 flex justify-between">
-                <span>Início: ${r.startTime}</span>
-                <span>Fim: ${r.endDate !== r.startDate ? formatDisplayDate(r.endDate) : ''} ${r.endTime}</span>
+              <h2 class="text-red-600 font-bold text-xl mt-2 mb-3">${r.acompanhante}</h2>
+              <div class="bg-gray-50 p-3 rounded-xl flex justify-between items-center border border-gray-100">
+                <div class="flex flex-col">
+                  <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Início</span>
+                  <span class="text-sm text-gray-700">${formatShortDate(r.startDate)} <strong class="text-gray-900 ml-1">${r.startTime}</strong></span>
+                </div>
+                <div class="flex flex-col text-right">
+                  <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Fim</span>
+                  <span class="text-sm text-gray-700">${formatShortDate(r.endDate)} <strong class="text-gray-900 ml-1">${r.endTime}</strong></span>
+                </div>
               </div>
             </div>`;
         } else {
           html += `
-            <div onclick="app.editRecord('${r.id}')" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col space-y-2 active:scale-95 transition-transform cursor-pointer">
-              <div class="flex justify-between items-center">
-                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">TRANSFERÊNCIA</span>
-                <span class="text-xs text-gray-400">${formatDisplayDate(r.date)}</span>
+            <div onclick="app.editRecord('${r.id}')" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col active:scale-95 transition-transform cursor-pointer">
+              <div class="flex items-start">
+                <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">TRANSFERÊNCIA</span>
               </div>
-              <h2 class="text-red-600 font-bold text-lg text-gray-900 line-clamp-1">${r.visita} &rarr; ${r.retorna}</h2>
-              <div class="text-sm text-gray-600 flex space-x-4">
-                <span><i data-lucide="truck" class="inline w-4 h-4 mr-1"></i> ${r.transporte}</span>
-                <span><i data-lucide="clock" class="inline w-4 h-4 mr-1"></i> ${r.horario}</span>
+              <h2 class="text-blue-700 font-bold text-xl mt-2 mb-3 leading-tight">${r.visita} <span class="text-gray-400 font-normal mx-1">&rarr;</span> ${r.retorna}</h2>
+              <div class="bg-gray-50 p-3 rounded-xl flex justify-between items-center border border-gray-100">
+                <div class="flex flex-col">
+                  <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Data</span>
+                  <span class="text-sm text-gray-700">${formatShortDate(r.date)} <strong class="text-gray-900 ml-1">${r.horario}</strong></span>
+                </div>
+                <div class="flex items-center text-gray-700 bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
+                  <i data-lucide="truck" class="w-4 h-4 text-blue-500 mr-1.5"></i>
+                  <span class="text-sm font-bold text-gray-800">${r.transporte}</span>
+                </div>
               </div>
             </div>`;
         }
@@ -687,7 +627,7 @@
       let hoursColHtml = '<div class="w-10 shrink-0 relative border-r border-gray-200 bg-white z-10">';
       for(let h=0; h<24; h++) {
         linesHtml += `<div class="w-full border-t border-gray-100 shrink-0" style="height: 60px;"></div>`;
-        hoursColHtml += `<div class="absolute w-full text-center text-[9px] text-gray-400 font-medium" style="top: ${h * 60 - 6}px">${String(h).padStart(2, '0')}h</div>`;
+        hoursColHtml += `<div class="absolute w-full text-center text-[10px] text-gray-900 font-extrabold" style="top: ${h * 60 - 7}px">${String(h).padStart(2, '0')}h</div>`;
       }
       linesHtml += '</div>';
       hoursColHtml += '</div>';
