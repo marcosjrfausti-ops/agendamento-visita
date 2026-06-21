@@ -50,7 +50,8 @@
         <i data-lucide="arrow-left"></i>
       </button>
       <h2 id="header-title" class="text-red-600 font-bold text-xl text-center flex-1">Título</h2>
-      <div class="w-8"></div> </div>
+      <div class="w-8"></div>
+    </div>
 
     <div class="flex-1 overflow-y-auto hide-scrollbar bg-gray-50 relative" id="main-content">
       
@@ -91,10 +92,19 @@
       </div>
 
       <div id="screen-acompanhante" class="screen hidden h-full flex flex-col space-y-6">
-        <div id="acomp-swipe-area" class="bg-red-600 text-white p-6 pb-8 rounded-b-[40px] shadow-md flex flex-col items-center justify-center relative select-none">
-          <span class="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">Deslize para mudar o dia</span>
-          <h1 id="acomp-date-display" class="text-2xl font-bold">Carregando...</h1>
-          <div class="absolute bottom-2 animate-bounce opacity-50 text-xs">↕</div>
+        <div id="acomp-date-area" class="bg-red-600 text-white p-5 pb-6 rounded-b-[40px] shadow-md flex items-center justify-between select-none">
+          <button onclick="app.changeAcompDate(-1)" class="p-2 bg-red-700/50 hover:bg-red-700 rounded-full active:scale-90 transition-all">
+            <i data-lucide="chevron-left" class="w-6 h-6"></i>
+          </button>
+          
+          <div class="flex flex-col items-center flex-1 px-2">
+            <span class="text-[10px] font-medium opacity-80 uppercase tracking-widest mb-1">Data Selecionada</span>
+            <h1 id="acomp-date-display" class="text-xl font-bold text-center leading-tight">Carregando...</h1>
+          </div>
+
+          <button onclick="app.changeAcompDate(1)" class="p-2 bg-red-700/50 hover:bg-red-700 rounded-full active:scale-90 transition-all">
+            <i data-lucide="chevron-right" class="w-6 h-6"></i>
+          </button>
         </div>
 
         <div class="flex-1 px-4 space-y-4 pt-4">
@@ -151,10 +161,19 @@
       </div>
 
       <div id="screen-transferencia" class="screen hidden h-full flex flex-col space-y-6">
-        <div id="transf-swipe-area" class="bg-blue-600 text-white p-6 pb-8 rounded-b-[40px] shadow-md flex flex-col items-center justify-center relative select-none">
-          <span class="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">Deslize para mudar o dia</span>
-          <h1 id="transf-date-display" class="text-2xl font-bold">Carregando...</h1>
-          <div class="absolute bottom-2 animate-bounce opacity-50 text-xs">↕</div>
+        <div id="transf-date-area" class="bg-blue-600 text-white p-5 pb-6 rounded-b-[40px] shadow-md flex items-center justify-between select-none">
+          <button onclick="app.changeTransfDate(-1)" class="p-2 bg-blue-700/50 hover:bg-blue-700 rounded-full active:scale-90 transition-all">
+            <i data-lucide="chevron-left" class="w-6 h-6"></i>
+          </button>
+          
+          <div class="flex flex-col items-center flex-1 px-2">
+            <span class="text-[10px] font-medium opacity-80 uppercase tracking-widest mb-1">Data Selecionada</span>
+            <h1 id="transf-date-display" class="text-xl font-bold text-center leading-tight">Carregando...</h1>
+          </div>
+
+          <button onclick="app.changeTransfDate(1)" class="p-2 bg-blue-700/50 hover:bg-blue-700 rounded-full active:scale-90 transition-all">
+            <i data-lucide="chevron-right" class="w-6 h-6"></i>
+          </button>
         </div>
 
         <div class="flex-1 px-4 space-y-4 pt-4">
@@ -201,7 +220,7 @@
       </div>
 
       <div id="screen-visualizar" class="screen hidden h-full flex flex-col bg-white relative">
-        <div class="sticky top-0 z-30 flex flex-col shadow-sm" id="cal-swipe-area">
+        <div class="sticky top-0 z-30 flex flex-col shadow-sm">
           <div class="bg-amber-100 p-2 text-center border-b border-amber-200 flex items-center justify-between px-2 select-none">
             <button onclick="app.changeWeek(-7)" class="text-amber-700 font-bold text-xl px-3 py-1">&lsaquo;</button>
             <div class="flex flex-col items-center">
@@ -231,28 +250,24 @@
   </div>
 
   <script type="module">
-    // 1. IMPORTS (Devem ser sempre as primeiras linhas)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // 2. INICIALIZAR O OBJETO GLOBAL IMEDIATAMENTE (Para os botões responderem na hora)
     window.app = {};
 
-    // --- ESTADO GLOBAL ---
     const state = {
       user: null,
       records: [],
       currentScreen: 'home',
       baseDateAcomp: new Date(),
       baseDateTransf: new Date(),
-      weekStart: new Date(), // Inicializado dinamicamente abaixo
+      weekStart: new Date(),
       editingId: null,
       editingType: null
     };
     state.weekStart = getMonday(new Date());
 
-    // --- NAVEGAÇÃO COLOCOADA NO TOPO PARA EVITAR BLOQUEIOS ---
     window.app.showScreen = (screenId) => {
       document.querySelectorAll('.screen').forEach(el => el.classList.add('hidden'));
       const targetScreen = document.getElementById(`screen-${screenId}`);
@@ -279,7 +294,6 @@
       if (screenId === 'transferencia' && !state.editingId) updateTransfDisplay();
     };
 
-    // --- CONFIGURAÇÃO FIREBASE ---
     const firebaseConfig = {
       apiKey: "AIzaSyBtHyDxJFLIyFplyaDeTlidDdXN6IzCh8s",
       authDomain: "agendamento-visita.firebaseapp.com",
@@ -293,7 +307,6 @@
     const firebaseApp = initializeApp(firebaseConfig);
     const auth = getAuth(firebaseApp);
     
-    // Tratamento de erro caso o cache local falhe no navegador
     let db;
     try {
       db = initializeFirestore(firebaseApp, {
@@ -305,7 +318,6 @@
     }
     const customAppId = 'agendamento-visita';
 
-    // --- UTILITÁRIOS ---
     function getFormatDateStr(dateObj) {
       const yyyy = dateObj.getFullYear();
       const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -328,15 +340,13 @@
       return new Date(date.getFullYear(), date.getMonth(), diff);
     }
 
-    // Inicializa os ícones do Lucide
     if (window.lucide) lucide.createIcons();
 
-    // --- AUTENTICAÇÃO E FIRESTORE ---
     async function initAuth() {
       try {
         await signInAnonymously(auth);
       } catch (err) {
-        console.error("Erro auth (usando fallback offline):", err);
+        console.error("Erro auth:", err);
         state.user = { uid: 'offline-local-user' };
         setupFirestoreListeners();
       }
@@ -401,8 +411,8 @@
       const acompEndTime = document.getElementById('acomp-end-time');
       if (acompEndTime) acompEndTime.value = '18:00';
       
-      const acompSwipe = document.getElementById('acomp-swipe-area');
-      if (acompSwipe) acompSwipe.classList.remove('hidden');
+      const acompDateArea = document.getElementById('acomp-date-area');
+      if (acompDateArea) acompDateArea.classList.remove('hidden');
       
       const acompEditDate = document.getElementById('acomp-edit-date-wrapper');
       if (acompEditDate) acompEditDate.classList.add('hidden');
@@ -428,8 +438,8 @@
       const transfDate = document.getElementById('transf-date');
       if (transfDate) transfDate.value = getFormatDateStr(state.baseDateTransf);
       
-      const transfSwipe = document.getElementById('transf-swipe-area');
-      if (transfSwipe) transfSwipe.classList.remove('hidden');
+      const transfDateArea = document.getElementById('transf-date-area');
+      if (transfDateArea) transfDateArea.classList.remove('hidden');
       
       const transfEditDate = document.getElementById('transf-edit-date-wrapper');
       if (transfEditDate) transfEditDate.classList.add('hidden');
@@ -441,37 +451,21 @@
       if (btnSaveTransfText) btnSaveTransfText.innerText = 'Salvar Registro';
     }
 
-    // --- LÓGICA DE SWIPE (DATAS) ---
-    function setupSwipe(elementId, callback) {
-      const el = document.getElementById(elementId);
-      if(!el) return;
-      let startY = 0; let startX = 0;
-      el.addEventListener('touchstart', e => { startY = e.touches[0].clientY; startX = e.touches[0].clientX; }, {passive: true});
-      el.addEventListener('touchend', e => {
-        const diffY = startY - e.changedTouches[0].clientY;
-        const diffX = startX - e.changedTouches[0].clientX;
-        
-        if(elementId.includes('swipe-area') && Math.abs(diffY) > 50 && Math.abs(diffY) > Math.abs(diffX)) {
-           callback(diffY > 0 ? 1 : -1);
-        } else if (elementId === 'cal-swipe-area' && Math.abs(diffX) > 50) {
-           callback(diffX > 0 ? 7 : -7);
-        }
-      });
-    }
-
-    setupSwipe('acomp-swipe-area', (dir) => {
+    // --- LÓGICA DE BOTÕES (SUBSTITUI O SWIPE) ---
+    window.app.changeAcompDate = (dir) => {
       state.baseDateAcomp.setDate(state.baseDateAcomp.getDate() + dir);
       updateAcompDisplay();
-    });
+    };
 
-    setupSwipe('transf-swipe-area', (dir) => {
+    window.app.changeTransfDate = (dir) => {
       state.baseDateTransf.setDate(state.baseDateTransf.getDate() + dir);
       updateTransfDisplay();
-    });
+    };
 
-    setupSwipe('cal-swipe-area', (dir) => {
-      window.app.changeWeek(dir);
-    });
+    window.app.changeWeek = (days) => {
+      state.weekStart.setDate(state.weekStart.getDate() + days);
+      renderCalendar();
+    };
 
     function updateAcompDisplay() {
       const dateStr = getFormatDateStr(state.baseDateAcomp);
@@ -491,12 +485,6 @@
       if (tDate) tDate.value = dateStr;
     }
 
-    window.app.changeWeek = (days) => {
-      state.weekStart.setDate(state.weekStart.getDate() + days);
-      renderCalendar();
-    };
-
-    // --- OPERAÇÕES CRUD FIREBASE ---
     async function saveToFirestore(collectionName, data) {
       if(!state.user || !db) return;
       try {
@@ -591,7 +579,7 @@
       state.editingType = rec.type;
 
       if(rec.type === 'acompanhante') {
-        document.getElementById('acomp-swipe-area').classList.add('hidden');
+        document.getElementById('acomp-date-area').classList.add('hidden');
         document.getElementById('acomp-edit-date-wrapper').classList.remove('hidden');
         document.getElementById('btn-delete-acomp').classList.remove('hidden');
         document.getElementById('btn-save-acomp-text').innerText = 'Atualizar';
@@ -605,7 +593,7 @@
         
         window.app.showScreen('acompanhante');
       } else {
-        document.getElementById('transf-swipe-area').classList.add('hidden');
+        document.getElementById('transf-date-area').classList.add('hidden');
         document.getElementById('transf-edit-date-wrapper').classList.remove('hidden');
         document.getElementById('btn-delete-transf').classList.remove('hidden');
         document.getElementById('btn-save-transf-text').innerText = 'Atualizar';
@@ -678,132 +666,4 @@
         label.innerText = `${String(weekDates[0].getDate()).padStart(2, '0')}/${String(weekDates[0].getMonth()+1).padStart(2, '0')} a ${String(weekDates[6].getDate()).padStart(2, '0')}/${String(weekDates[6].getMonth()+1).padStart(2, '0')}`;
       }
 
-      let headerHtml = `<div class="w-10 shrink-0 border-r border-gray-200 bg-white"></div>`;
-      const todayStr = new Date().toDateString();
-      
-      weekDates.forEach(d => {
-        const isToday = d.toDateString() === todayStr;
-        headerHtml += `
-          <div class="flex-1 flex flex-col items-center py-1 border-r border-gray-100 text-[10px] ${isToday ? 'bg-amber-50' : ''}">
-            <span class="font-medium ${isToday ? 'text-amber-600' : 'text-gray-500'}">${shortDays[d.getDay()]}</span>
-            <span class="font-bold mt-[2px] ${isToday ? 'bg-amber-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-sm' : 'text-gray-800'}">
-              ${d.getDate()}
-            </span>
-          </div>`;
-      });
-      const daysHeader = document.getElementById('cal-days-header');
-      if (daysHeader) daysHeader.innerHTML = headerHtml;
-
-      let gridHtml = '';
-      let linesHtml = '<div class="absolute inset-0 pointer-events-none z-0 flex flex-col">';
-      let hoursColHtml = '<div class="w-10 shrink-0 relative border-r border-gray-200 bg-white z-10">';
-      for(let h=0; h<24; h++) {
-        linesHtml += `<div class="w-full border-t border-gray-100 shrink-0" style="height: 60px;"></div>`;
-        hoursColHtml += `<div class="absolute w-full text-center text-[9px] text-gray-400 font-medium" style="top: ${h * 60 - 6}px">${String(h).padStart(2, '0')}h</div>`;
-      }
-      linesHtml += '</div>';
-      hoursColHtml += '</div>';
-
-      gridHtml += linesHtml + hoursColHtml;
-
-      weekDates.forEach(dObj => {
-        const dateStr = getFormatDateStr(dObj);
-        const startOfDay = new Date(`${dateStr}T00:00:00`);
-        const endOfDay = new Date(`${dateStr}T23:59:59`);
-        const isToday = dObj.toDateString() === todayStr;
-
-        let colHtml = `<div class="flex-1 relative border-r border-gray-100 z-10 ${isToday ? 'bg-amber-50 bg-opacity-20' : ''}">`;
-
-        state.records.forEach(r => {
-          if (r.type === 'acompanhante') {
-             const rStart = new Date(`${r.startDate}T${r.startTime}`);
-             const rEnd = new Date(`${r.endDate}T${r.endTime}`);
-             if (rStart <= endOfDay && rEnd >= startOfDay) {
-               const vStart = rStart < startOfDay ? startOfDay : rStart;
-               const vEnd = rEnd > endOfDay ? endOfDay : rEnd;
-               const topPx = (vStart.getHours() * 60) + vStart.getMinutes();
-               const durMins = (vEnd - vStart) / 60000;
-               const heightPx = durMins < 30 ? 30 : durMins;
-
-               colHtml += `
-                 <div class="absolute left-[2px] right-[2px] rounded bg-red-100 border border-red-300 shadow-sm flex items-center justify-center overflow-hidden opacity-90" style="top: ${topPx}px; height: ${heightPx}px;">
-                   <span class="text-[10px] font-bold text-red-800 whitespace-nowrap overflow-hidden text-ellipsis px-1 vertical-text">
-                     ${r.acompanhante}
-                   </span>
-                 </div>`;
-             }
-          } else if (r.date === dateStr) {
-             const [hh, mm] = r.horario.split(':').map(Number);
-             const topPx = (hh * 60) + mm;
-             colHtml += `
-               <div class="absolute left-[1px] right-[1px] z-20 flex flex-col items-center" style="top: ${topPx - 2}px;">
-                 <div class="w-full h-[4px] bg-blue-700 rounded-full mb-[2px] shadow-sm"></div>
-                 <div class="bg-blue-600 text-white rounded-sm py-1 shadow-md overflow-hidden flex flex-col items-center max-h-[80px]">
-                   <span class="text-[9px] font-bold whitespace-nowrap overflow-hidden text-ellipsis vertical-text">
-                     ${r.visita}
-                   </span>
-                 </div>
-               </div>`;
-          }
-        });
-
-        colHtml += '</div>';
-        gridHtml += colHtml;
-      });
-
-      gridBody.innerHTML = gridHtml;
-    }
-
-    // --- GERADOR DE PDF ---
-    window.app.generatePDF = async () => {
-      const btnText = document.getElementById('btn-pdf-text');
-      if (btnText) btnText.innerText = 'Gerando PDF...';
-      
-      let coordsText = "GPS não capturado / Sem permissão";
-      try {
-        if (navigator.geolocation) {
-          const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 7000 }));
-          coordsText = `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}`;
-        }
-      } catch(e) { console.warn("GPS ignorado."); }
-
-      if(!window.pdfMake) {
-        if (btnText) btnText.innerText = 'Baixar Relatório (PDF)';
-        return alert("PDFMake não carregado totalmente.");
-      }
-
-      const docDef = {
-        content: [
-          { text: 'RELATÓRIO DE AGENDAMENTOS', style: 'header', alignment: 'center' },
-          { text: `Gerado em: ${new Date().toLocaleString()}`, alignment: 'center', margin: [0, 0, 0, 20] },
-        ],
-        footer: (currentPage, pageCount) => ({ text: `Página ${currentPage} de ${pageCount} | Geração: ${coordsText}`, alignment: 'center', fontSize: 8, margin: [0, 10, 0, 0] }),
-        styles: { header: { fontSize: 18, bold: true, color: '#dc2626', margin: [0,0,0,10] }, subheader: { fontSize: 14, bold: true, margin: [0,10,0,5] }, item: { fontSize: 11, margin: [0,2,0,2] } }
-      };
-
-      state.records.forEach(r => {
-        if(r.type === 'acompanhante') {
-          docDef.content.push(
-            { text: `Acompanhante: ${r.acompanhante}`, style: 'subheader' },
-            { text: `Início: ${formatDisplayDate(r.startDate)} às ${r.startTime}`, style: 'item' },
-            { text: `Fim: ${formatDisplayDate(r.endDate)} às ${r.endTime}`, style: 'item' },
-            { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1, lineColor: '#e5e7eb' }], margin: [0,10,0,10] }
-          );
-        } else {
-          docDef.content.push(
-            { text: `Transferência - Dia: ${formatDisplayDate(r.date)}`, style: 'subheader' },
-            { text: `Visita: ${r.visita}`, style: 'item' },
-            { text: `Retorno: ${r.retorna}`, style: 'item' },
-            { text: `Transporte: ${r.transporte} | Horário: ${r.horario}`, style: 'item' },
-            { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1, lineColor: '#e5e7eb' }], margin: [0,10,0,10] }
-          );
-        }
-      });
-
-      pdfMake.createPdf(docDef).download('agendamentos.pdf');
-      if (btnText) btnText.innerText = 'Baixar Relatório (PDF)';
-    };
-
-    // Inicialização da Autenticação
-    initAuth();
-  </script>
+      let headerHtml = `<div class="w-10 shrink-0 border-r border-gray-2
