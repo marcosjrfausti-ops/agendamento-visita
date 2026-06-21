@@ -5,22 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Gestão de Agendamentos</title>
   
-  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Google Fonts: Poppins -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   
-  <!-- PDFMake -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
-  <!-- Tailwind Config e Estilos Customizados -->
   <script>
     tailwind.config = {
       theme: {
@@ -48,24 +43,17 @@
 </head>
 <body class="text-gray-900 font-sans">
 
-  <!-- Container Principal -->
   <div class="min-h-screen max-w-md mx-auto bg-gray-50 flex flex-col relative overflow-hidden shadow-2xl sm:rounded-3xl sm:my-4 sm:border sm:border-gray-200">
     
-    <!-- Cabeçalho Global (Oculto na Home) -->
     <div id="global-header" class="hidden bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between z-40 sticky top-0 shadow-sm">
       <button onclick="app.showScreen('home')" class="p-2 -ml-2 rounded-full hover:bg-gray-100 text-gray-700 transition-colors">
         <i data-lucide="arrow-left"></i>
       </button>
       <h2 id="header-title" class="text-red-600 font-bold text-xl text-center flex-1">Título</h2>
-      <div class="w-8"></div> <!-- Spacer -->
-    </div>
+      <div class="w-8"></div> </div>
 
-    <!-- Área de Telas -->
     <div class="flex-1 overflow-y-auto hide-scrollbar bg-gray-50 relative" id="main-content">
       
-      <!-- ========================================== -->
-      <!-- TELA 1: HOME -->
-      <!-- ========================================== -->
       <div id="screen-home" class="screen h-full p-6 flex flex-col justify-center space-y-6">
         <div class="text-center mb-8">
           <h2 class="text-red-600 font-bold text-3xl mb-2">Painel de Gestão</h2>
@@ -102,9 +90,6 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
-      <!-- TELA 2: FORMULÁRIO ACOMPANHANTE -->
-      <!-- ========================================== -->
       <div id="screen-acompanhante" class="screen hidden h-full flex flex-col space-y-6">
         <div id="acomp-swipe-area" class="bg-red-600 text-white p-6 pb-8 rounded-b-[40px] shadow-md flex flex-col items-center justify-center relative select-none">
           <span class="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">Deslize para mudar o dia</span>
@@ -165,9 +150,6 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
-      <!-- TELA 3: FORMULÁRIO TRANSFERÊNCIA -->
-      <!-- ========================================== -->
       <div id="screen-transferencia" class="screen hidden h-full flex flex-col space-y-6">
         <div id="transf-swipe-area" class="bg-blue-600 text-white p-6 pb-8 rounded-b-[40px] shadow-md flex flex-col items-center justify-center relative select-none">
           <span class="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">Deslize para mudar o dia</span>
@@ -218,9 +200,6 @@
         </div>
       </div>
 
-      <!-- ========================================== -->
-      <!-- TELA 4: VISUALIZAR SEMANA -->
-      <!-- ========================================== -->
       <div id="screen-visualizar" class="screen hidden h-full flex flex-col bg-white relative">
         <div class="sticky top-0 z-30 flex flex-col shadow-sm" id="cal-swipe-area">
           <div class="bg-amber-100 p-2 text-center border-b border-amber-200 flex items-center justify-between px-2 select-none">
@@ -233,33 +212,24 @@
           </div>
           
           <div id="cal-days-header" class="flex border-b border-gray-200 bg-gray-50">
-             <!-- Injetado via JS -->
-          </div>
+             </div>
         </div>
 
         <div class="flex-1 overflow-y-auto pb-10 hide-scrollbar bg-white">
           <div class="flex relative" style="height: 1440px;" id="cal-grid-body">
-            <!-- Injetado via JS -->
-          </div>
+            </div>
         </div>
       </div>
 
-      <!-- ========================================== -->
-      <!-- TELA 5: ALTERAR REGISTRO (LISTA) -->
-      <!-- ========================================== -->
       <div id="screen-alterar" class="screen hidden pb-10 p-4 space-y-4">
         <p class="text-sm text-gray-500 text-center mb-4 mt-2">Toque em qualquer registro para alterar ou excluir.</p>
         <div id="records-list" class="space-y-4">
-          <!-- Injetado via JS -->
-        </div>
+          </div>
       </div>
 
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- LÓGICA DO APLICATIVO (VANILLA JS) -->
-  <!-- ========================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -493,289 +463,3 @@
           }
           return acc;
         }, {});
-
-        if (state.editingId) {
-          dadosTratados.updatedAt = new Date().toISOString();
-          await updateDoc(doc(ref, state.editingId), dadosTratados);
-        } else {
-          dadosTratados.createdAt = new Date().toISOString();
-          await setDoc(doc(ref, crypto.randomUUID()), dadosTratados);
-        }
-        window.app.showScreen('home');
-      } catch(e) {
-        console.error("Erro salvando:", e);
-        alert("Erro ao salvar. Tente novamente.");
-      }
-    }
-
-    window.app.saveAcompanhante = () => {
-      const nome = document.getElementById('acomp-nome').value.trim();
-      if(!nome) return alert("Preencha o nome.");
-      
-      const data = {
-        type: 'acompanhante',
-        acompanhante: nome,
-        startDate: document.getElementById(state.editingId ? 'acomp-input-basedate' : 'acomp-start-date').value || document.getElementById('acomp-start-date').value,
-        startTime: document.getElementById('acomp-start-time').value,
-        endDate: document.getElementById('acomp-end-date').value,
-        endTime: document.getElementById('acomp-end-time').value
-      };
-      
-      // Se editando, e usou o campo único de data ref, copia pro start (simplificação do react)
-      if(state.editingId) data.startDate = document.getElementById('acomp-input-basedate').value;
-
-      saveToFirestore('acompanhantes', data);
-    };
-
-    window.app.saveTransferencia = () => {
-      const visita = document.getElementById('transf-visita').value.trim();
-      const retorna = document.getElementById('transf-retorna').value.trim();
-      if(!visita || !retorna) return alert("Preencha Visita e Retorno.");
-
-      const data = {
-        type: 'transferencia',
-        date: document.getElementById('transf-date').value,
-        visita: visita,
-        retorna: retorna,
-        transporte: document.getElementById('transf-transporte').value,
-        horario: document.getElementById('transf-horario').value
-      };
-      saveToFirestore('transferencias', data);
-    };
-
-    window.app.deleteCurrentRecord = async () => {
-      if(!state.user || !state.editingId || !confirm("Deseja realmente excluir este registro?")) return;
-      try {
-        const col = state.editingType === 'acompanhante' ? 'acompanhantes' : 'transferencias';
-        await deleteDoc(doc(db, 'artifacts', customAppId, 'users', state.user.uid, col, state.editingId));
-        window.app.showScreen('home');
-      } catch(e) {
-        console.error("Erro excluindo:", e);
-      }
-    };
-
-    window.app.editRecord = (id) => {
-      const rec = state.records.find(r => r.id === id);
-      if(!rec) return;
-
-      state.editingId = rec.id;
-      state.editingType = rec.type;
-
-      if(rec.type === 'acompanhante') {
-        document.getElementById('acomp-swipe-area').classList.add('hidden');
-        document.getElementById('acomp-edit-date-wrapper').classList.remove('hidden');
-        document.getElementById('btn-delete-acomp').classList.remove('hidden');
-        document.getElementById('btn-save-acomp-text').innerText = 'Atualizar';
-        
-        document.getElementById('acomp-input-basedate').value = rec.startDate;
-        document.getElementById('acomp-nome').value = rec.acompanhante;
-        document.getElementById('acomp-start-date').value = rec.startDate;
-        document.getElementById('acomp-start-time').value = rec.startTime;
-        document.getElementById('acomp-end-date').value = rec.endDate;
-        document.getElementById('acomp-end-time').value = rec.endTime;
-        
-        window.app.showScreen('acompanhante');
-      } else {
-        document.getElementById('transf-swipe-area').classList.add('hidden');
-        document.getElementById('transf-edit-date-wrapper').classList.remove('hidden');
-        document.getElementById('btn-delete-transf').classList.remove('hidden');
-        document.getElementById('btn-save-transf-text').innerText = 'Atualizar';
-
-        document.getElementById('transf-date').value = rec.date;
-        document.getElementById('transf-visita').value = rec.visita;
-        document.getElementById('transf-retorna').value = rec.retorna;
-        document.getElementById('transf-transporte').value = rec.transporte;
-        document.getElementById('transf-horario').value = rec.horario;
-
-        window.app.showScreen('transferencia');
-      }
-    };
-
-    // --- RENDERIZAÇÃO DE LISTA ---
-    function renderRecordsList() {
-      const list = document.getElementById('records-list');
-      if(state.records.length === 0) {
-        list.innerHTML = `<div class="text-center text-gray-400 mt-10">Nenhum registro encontrado.</div>`;
-        return;
-      }
-
-      let html = '';
-      state.records.forEach(r => {
-        if(r.type === 'acompanhante') {
-          html += `
-            <div onclick="app.editRecord('${r.id}')" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col space-y-2 active:scale-95 transition-transform cursor-pointer">
-              <div class="flex justify-between items-center">
-                <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">ACOMPANHANTE</span>
-                <span class="text-xs text-gray-400">${formatDisplayDate(r.startDate)}</span>
-              </div>
-              <h2 class="text-red-600 font-bold text-lg text-gray-900">${r.acompanhante}</h2>
-              <div class="text-sm text-gray-600 flex justify-between">
-                <span>Início: ${r.startTime}</span>
-                <span>Fim: ${r.endDate !== r.startDate ? formatDisplayDate(r.endDate) : ''} ${r.endTime}</span>
-              </div>
-            </div>`;
-        } else {
-          html += `
-            <div onclick="app.editRecord('${r.id}')" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col space-y-2 active:scale-95 transition-transform cursor-pointer">
-              <div class="flex justify-between items-center">
-                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">TRANSFERÊNCIA</span>
-                <span class="text-xs text-gray-400">${formatDisplayDate(r.date)}</span>
-              </div>
-              <h2 class="text-red-600 font-bold text-lg text-gray-900 line-clamp-1">${r.visita} &rarr; ${r.retorna}</h2>
-              <div class="text-sm text-gray-600 flex space-x-4">
-                <span><i data-lucide="truck" class="inline w-4 h-4 mr-1"></i> ${r.transporte}</span>
-                <span><i data-lucide="clock" class="inline w-4 h-4 mr-1"></i> ${r.horario}</span>
-              </div>
-            </div>`;
-        }
-      });
-      list.innerHTML = html;
-      lucide.createIcons();
-    }
-
-    // --- RENDERIZAÇÃO DO CALENDÁRIO ---
-    const shortDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    function renderCalendar() {
-      const weekDates = Array.from({length: 7}).map((_, i) => {
-        const d = new Date(state.weekStart);
-        d.setDate(d.getDate() + i);
-        return d;
-      });
-
-      // Update Header Text
-      document.getElementById('cal-week-label').innerText = 
-        `${String(weekDates[0].getDate()).padStart(2, '0')}/${String(weekDates[0].getMonth()+1).padStart(2, '0')} a ${String(weekDates[6].getDate()).padStart(2, '0')}/${String(weekDates[6].getMonth()+1).padStart(2, '0')}`;
-
-      // Build Days Columns Header
-      let headerHtml = `<div class="w-10 shrink-0 border-r border-gray-200 bg-white"></div>`;
-      const todayStr = new Date().toDateString();
-      
-      weekDates.forEach(d => {
-        const isToday = d.toDateString() === todayStr;
-        headerHtml += `
-          <div class="flex-1 flex flex-col items-center py-1 border-r border-gray-100 text-[10px] ${isToday ? 'bg-amber-50' : ''}">
-            <span class="font-medium ${isToday ? 'text-amber-600' : 'text-gray-500'}">${shortDays[d.getDay()]}</span>
-            <span class="font-bold mt-[2px] ${isToday ? 'bg-amber-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-sm' : 'text-gray-800'}">
-              ${d.getDate()}
-            </span>
-          </div>`;
-      });
-      document.getElementById('cal-days-header').innerHTML = headerHtml;
-
-      // Build Grid Body
-      let gridHtml = '';
-      
-      // Horizontal Lines & Hours (0-23)
-      let linesHtml = '<div class="absolute inset-0 pointer-events-none z-0 flex flex-col">';
-      let hoursColHtml = '<div class="w-10 shrink-0 relative border-r border-gray-200 bg-white z-10">';
-      for(let h=0; h<24; h++) {
-        linesHtml += `<div class="w-full border-t border-gray-100 shrink-0" style="height: 60px;"></div>`;
-        hoursColHtml += `<div class="absolute w-full text-center text-[9px] text-gray-400 font-medium" style="top: ${h * 60 - 6}px">${String(h).padStart(2, '0')}h</div>`;
-      }
-      linesHtml += '</div>';
-      hoursColHtml += '</div>';
-
-      gridHtml += linesHtml + hoursColHtml;
-
-      // Days columns with blocks
-      weekDates.forEach(dObj => {
-        const dateStr = getFormatDateStr(dObj);
-        const startOfDay = new Date(`${dateStr}T00:00:00`);
-        const endOfDay = new Date(`${dateStr}T23:59:59`);
-        const isToday = dObj.toDateString() === todayStr;
-
-        let colHtml = `<div class="flex-1 relative border-r border-gray-100 z-10 ${isToday ? 'bg-amber-50 bg-opacity-20' : ''}">`;
-
-        // Filter and place records
-        state.records.forEach(r => {
-          if (r.type === 'acompanhante') {
-             const rStart = new Date(`${r.startDate}T${r.startTime}`);
-             const rEnd = new Date(`${r.endDate}T${r.endTime}`);
-             if (rStart <= endOfDay && rEnd >= startOfDay) {
-               const vStart = rStart < startOfDay ? startOfDay : rStart;
-               const vEnd = rEnd > endOfDay ? endOfDay : rEnd;
-               const topPx = (vStart.getHours() * 60) + vStart.getMinutes();
-               const durMins = (vEnd - vStart) / 60000;
-               const heightPx = durMins < 30 ? 30 : durMins;
-
-               colHtml += `
-                 <div class="absolute left-[2px] right-[2px] rounded bg-red-100 border border-red-300 shadow-sm flex items-center justify-center overflow-hidden opacity-90" style="top: ${topPx}px; height: ${heightPx}px;">
-                   <span class="text-[10px] font-bold text-red-800 whitespace-nowrap overflow-hidden text-ellipsis px-1 vertical-text">
-                     ${r.acompanhante}
-                   </span>
-                 </div>`;
-             }
-          } else if (r.date === dateStr) {
-             const [hh, mm] = r.horario.split(':').map(Number);
-             const topPx = (hh * 60) + mm;
-             colHtml += `
-               <div class="absolute left-[1px] right-[1px] z-20 flex flex-col items-center" style="top: ${topPx - 2}px;">
-                 <div class="w-full h-[4px] bg-blue-700 rounded-full mb-[2px] shadow-sm"></div>
-                 <div class="bg-blue-600 text-white rounded-sm py-1 shadow-md overflow-hidden flex flex-col items-center max-h-[80px]">
-                   <span class="text-[9px] font-bold whitespace-nowrap overflow-hidden text-ellipsis vertical-text">
-                     ${r.visita}
-                   </span>
-                 </div>
-               </div>`;
-          }
-        });
-
-        colHtml += '</div>';
-        gridHtml += colHtml;
-      });
-
-      document.getElementById('cal-grid-body').innerHTML = gridHtml;
-    }
-
-    // --- GERADOR DE PDF ---
-    window.app.generatePDF = async () => {
-      const btnText = document.getElementById('btn-pdf-text');
-      btnText.innerText = 'Gerando PDF...';
-      
-      let coordsText = "GPS não capturado / Sem permissão";
-      try {
-        if (navigator.geolocation) {
-          const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 7000 }));
-          coordsText = `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}`;
-        }
-      } catch(e) { console.warn("GPS ignorado."); }
-
-      if(!window.pdfMake) return alert("PDFMake não carregado.");
-
-      const docDef = {
-        content: [
-          { text: 'RELATÓRIO DE AGENDAMENTOS', style: 'header', alignment: 'center' },
-          { text: `Gerado em: ${new Date().toLocaleString()}`, alignment: 'center', margin: [0, 0, 0, 20] },
-        ],
-        footer: (currentPage, pageCount) => ({ text: `Página ${currentPage} de ${pageCount} | Geração: ${coordsText}`, alignment: 'center', fontSize: 8, margin: [0, 10, 0, 0] }),
-        styles: { header: { fontSize: 18, bold: true, color: '#dc2626', margin: [0,0,0,10] }, subheader: { fontSize: 14, bold: true, margin: [0,10,0,5] }, item: { fontSize: 11, margin: [0,2,0,2] } }
-      };
-
-      state.records.forEach(r => {
-        if(r.type === 'acompanhante') {
-          docDef.content.push(
-            { text: `Acompanhante: ${r.acompanhante}`, style: 'subheader' },
-            { text: `Início: ${formatDisplayDate(r.startDate)} às ${r.startTime}`, style: 'item' },
-            { text: `Fim: ${formatDisplayDate(r.endDate)} às ${r.endTime}`, style: 'item' },
-            { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1, lineColor: '#e5e7eb' }], margin: [0,10,0,10] }
-          );
-        } else {
-          docDef.content.push(
-            { text: `Transferência - Dia: ${formatDisplayDate(r.date)}`, style: 'subheader' },
-            { text: `Visita: ${r.visita}`, style: 'item' },
-            { text: `Retorno: ${r.retorna}`, style: 'item' },
-            { text: `Transporte: ${r.transporte} | Horário: ${r.horario}`, style: 'item' },
-            { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1, lineColor: '#e5e7eb' }], margin: [0,10,0,10] }
-          );
-        }
-      });
-
-      pdfMake.createPdf(docDef).download('agendamentos.pdf');
-      btnText.innerText = 'Baixar Relatório (PDF)';
-    };
-
-    // Inicialização da Autenticação na carga
-    initAuth();
-  </script>
-</body>
-</html>
